@@ -13,8 +13,10 @@
 #include <vector>
 #include <sstream>
 
+#if defined OIS_SDL_PLATFORM
+#include "SDL.h"
 ////////////////////////////////////Needed Windows Headers////////////
-#if defined OIS_WIN32_PLATFORM
+#elif defined OIS_WIN32_PLATFORM
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
 #ifdef min
@@ -55,7 +57,9 @@ Mouse	 *g_m   = 0;				//Mouse Device
 JoyStick* g_joys[4] = {0,0,0,0};	//This demo supports up to 4 controllers
 
 //-- OS Specific Globals --//
-#if defined OIS_WIN32_PLATFORM
+#if defined OIS_SDL_PLATFORM
+  SDL_Surface* sdl_win = 0;
+#elif defined OIS_WIN32_PLATFORM
   HWND hWnd = 0;
 #elif defined OIS_LINUX_PLATFORM
   Display *xDisp = 0;
@@ -165,7 +169,9 @@ int main()
 		while(appRunning)
 		{
 			//Throttle down CPU usage
-			#if defined OIS_WIN32_PLATFORM
+            #if defined OIS_SDL_PLATFORM
+              SDL_Delay(90);
+			#elif defined OIS_WIN32_PLATFORM
 			  Sleep(90);
 			  MSG  msg;
 			  while( PeekMessage( &msg, NULL, 0U, 0U, PM_REMOVE ) )
@@ -226,7 +232,9 @@ int main()
 	if( g_InputManager )
 		InputManager::destroyInputSystem(g_InputManager);
 
-#if defined OIS_LINUX_PLATFORM
+#if defined OIS_SDL_PLATFORM
+    SDL_Quit();
+#elif defined OIS_LINUX_PLATFORM
 	// Be nice to X and clean up the x window
 	XDestroyWindow(xDisp, xWin);
 	XCloseDisplay(xDisp);
@@ -240,7 +248,19 @@ void doStartup()
 {
 	ParamList pl;
 
-#if defined OIS_WIN32_PLATFORM
+#if defined OIS_SDL_PLATFORM
+    // Initialize SDL
+    SDL_Init(SDL_INIT_VIDEO);
+
+    //Create an SDL window
+    sdl_win = SDL_SetVideoMode(2020, 200, 32, 0);
+	if( sdl_win == 0 )
+		OIS_EXCEPT(E_General, "Error opening SDL Window!");
+
+	//For this demo, show mouse and do not grab (confine to window)
+	pl.insert(std::make_pair(std::string("sdl_mouse_grab"), std::string("false")));
+	pl.insert(std::make_pair(std::string("sdl_mouse_hide"), std::string("false")));
+#elif defined OIS_WIN32_PLATFORM
 	//Create a capture window for Input Grabbing
 	hWnd = CreateDialog( 0, MAKEINTRESOURCE(IDD_DIALOG1), 0,(DLGPROC)DlgProc);
 	if( hWnd == NULL )
@@ -416,7 +436,14 @@ LRESULT DlgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 }
 #endif
 
-#if defined OIS_LINUX_PLATFORM
+#if defined OIS_SDL_PLATFORM
+void checkSDLEvents()
+{
+    // Do something to process events?
+}
+#endif
+
+#if defined OIS_LINUX_PLATFORM && !defined OIS_SDL_PLATFORM
 //This is just here to show that you still recieve x11 events, as the lib only needs mouse/key events
 void checkX11Events()
 {

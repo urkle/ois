@@ -10,8 +10,10 @@
 
 using namespace std;
 
+#if defined OIS_SDL_PLATFORM
+#include "SDL.h"
 ////////////////////////////////////Needed Windows Headers////////////
-#if defined OIS_WIN32_PLATFORM
+#elif defined OIS_WIN32_PLATFORM
 #  define WIN32_LEAN_AND_MEAN
 #  include "windows.h"
 #  include "resource.h"
@@ -765,7 +767,9 @@ class Application
     JoystickManager* _pJoystickMgr;
 	EffectManager*   _pEffectMgr;
 
-#if defined OIS_WIN32_PLATFORM
+#if defined OIS_SDL_PLATFORM
+    SDL_Surface*     _sdl_win;
+#elif defined OIS_WIN32_PLATFORM
     HWND             _hWnd;
 #elif defined OIS_LINUX_PLATFORM
     Display*         _pXDisp;
@@ -794,7 +798,9 @@ class Application
 	  _pJoystickMgr = 0;
 	  _pEffectMgr = 0;
 
-#if defined OIS_WIN32_PLATFORM
+#if defined OIS_SDL_PLATFORM
+      _sdl_win = 0;
+#elif defined OIS_WIN32_PLATFORM
 	  _hWnd = 0;
 #elif defined OIS_LINUX_PLATFORM
 	  _pXDisp = 0;
@@ -811,7 +817,12 @@ class Application
     {
 	  ostringstream wnd;
 
-#if defined OIS_WIN32_PLATFORM
+#if defined OIS_SDL_PLATFORM
+      SDL_Init(SDL_INIT_VIDEO);
+      _sdl_win = SDL_SetVideoMode(200, 200, 32, 0);
+      if (_sdl_win == 0) 
+          OIS_EXCEPT(E_General, "Failed to create SDL Window!");
+#elif defined OIS_WIN32_PLATFORM
 
 	  //Create a capture window for Input Grabbing
 	  _hWnd = CreateDialog( 0, MAKEINTRESOURCE(IDD_DIALOG1), 0,(DLGPROC)DlgProc);
@@ -878,7 +889,7 @@ class Application
 	  return _nStatus;
 	}
 
-#if defined OIS_LINUX_PLATFORM
+#if defined OIS_LINUX_PLATFORM && !defined OIS_SDL_PLATFORM
 
     // This is just here to show that you still receive x11 events, 
     // as the lib only needs mouse/key events
@@ -931,7 +942,9 @@ class Application
 			   << "                           ";
 
 		  //Throttle down CPU usage & handle OS events
-#if defined OIS_WIN32_PLATFORM
+#if defined OIS_SDL_PLATFORM
+          SDL_Delay(10);
+#elif defined OIS_WIN32_PLATFORM
 		  Sleep( (DWORD)(1000.0/_nHartBeatFreq) );
 		  MSG msg;
 		  while( PeekMessage( &msg, NULL, 0U, 0U, PM_REMOVE ) )
@@ -989,8 +1002,9 @@ class Application
 		delete _pEventHdlr;
 		_pEventHdlr = 0;
 	  }
-
-#if defined OIS_LINUX_PLATFORM
+#if defined OIS_SDL_PLATFORM
+      SDL_Quit();
+#elif defined OIS_LINUX_PLATFORM
 	  // Be nice to X and clean up the x window
 	  XDestroyWindow(_pXDisp, _xWin);
 	  XCloseDisplay(_pXDisp);
