@@ -31,7 +31,7 @@ namespace OIS
 	class SDLMouse : public Mouse
 	{
 	public:
-		SDLMouse( bool buffered );
+		SDLMouse( InputManager* creator, bool buffered, bool grab, bool hide );
 		virtual ~SDLMouse();
 		
 		/** @copydoc Object::setBuffered */
@@ -50,9 +50,8 @@ namespace OIS
 		void _setVisible(bool visible);
 
 	protected:
-		SDLMouse() {}
-
 		bool mGrabbed;
+        bool mHidden;
 		bool mRegainFocus;
 	};
 }

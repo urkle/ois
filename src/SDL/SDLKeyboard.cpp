@@ -29,23 +29,10 @@ restrictions:
 using namespace OIS;
 
 //-------------------------------------------------------------------//
-SDLKeyboard::SDLKeyboard( bool buffered )
+SDLKeyboard::SDLKeyboard(InputManager* creator, bool buffered )
+    : Keyboard(creator->inputSystemName(), buffered, 0, creator)
 {
-	mBuffered = buffered;
-	mType = OISKeyboard;
-	listener = 0;
-
-	//Clear our keyboard state buffer
-	memset( &KeyBuffer, 0, 256 );
-}
-
-//-------------------------------------------------------------------//
-void SDLKeyboard::_initialize()
-{
-	mModifiers = 0;
-	mSDLBuff = 0;
-
-	mKeyMap.insert( KeyMap::value_type(SDLK_ESCAPE,KC_ESCAPE) );
+    mKeyMap.insert( KeyMap::value_type(SDLK_ESCAPE,KC_ESCAPE) );
 	mKeyMap.insert( KeyMap::value_type(SDLK_1, KC_1) );
 	mKeyMap.insert( KeyMap::value_type(SDLK_2, KC_2) );
 	mKeyMap.insert( KeyMap::value_type(SDLK_3, KC_3) );
@@ -148,6 +135,19 @@ void SDLKeyboard::_initialize()
 	mKeyMap.insert( KeyMap::value_type(SDLK_DELETE, KC_DELETE) );
 	mKeyMap.insert( KeyMap::value_type(SDLK_LSUPER, KC_LWIN) );
 	mKeyMap.insert( KeyMap::value_type(SDLK_RSUPER, KC_RWIN) );
+    
+    static_cast<SDLInputManager*>(mCreator)->_setKeyboardUsed(true);
+}
+
+//-------------------------------------------------------------------//
+void SDLKeyboard::_initialize()
+{
+	//Clear our keyboard state buffer
+	memset( &KeyBuffer, 0, 256 );
+    mModifiers = 0;
+
+    mSDLBuff = 0;
+
 
 	SDL_EnableUNICODE(1);
 }
@@ -155,6 +155,13 @@ void SDLKeyboard::_initialize()
 //-------------------------------------------------------------------//
 SDLKeyboard::~SDLKeyboard()
 {
+    static_cast<SDLInputManager*>(mCreator)->_setKeyboardUsed(false);
+}
+
+//-------------------------------------------------------------------//
+bool SDLKeyboard::isKeyDown( KeyCode key ) const
+{
+	return KeyBuffer[key] == 1 ? true : false;
 }
 
 //-------------------------------------------------------------------//
@@ -166,204 +173,97 @@ void SDLKeyboard::capture()
 
 	for( int i = 0; i < count; ++i )
 	{
-		KeyCode kc = mKeyMap[events[i].key.keysym.sym];
-		KeyBuffer[kc] = events[i].key.state;
-
-		if( mBuffered && listener )
-		{
-			if( events[i].key.state == SDL_PRESSED )
-			{
-				if( listener->keyPressed(KeyEvent(this, 0, kc, events[i].key.keysym.unicode)) == false )
-					break;
-			}
-			else
-			{
-				if( listener->keyReleased(KeyEvent(this, 0, kc, events[i].key.keysym.unicode)) == false )
-					break;
-			}
-		}
+        if( events[i].key.state == SDL_PRESSED )
+        {
+            _injectKeyDown(events[i].key.keysym.sym, events[i].key.keysym.unicode);
+        }
+        else
+        {
+            _injectKeyUp(events[i].key.keysym.sym);
+        }
 	}
 
 	//Release Grab mode on Alt-Tab combinations (for non-window systems)
 	if( KeyBuffer[KC_RMENU] || KeyBuffer[KC_LMENU])
 	{
 		if( KeyBuffer[KC_TAB] )
-			static_cast<SDLInputManager*>(InputManager::getSingletonPtr())->_setGrabMode(false);
+            static_cast<SDLInputManager*>(mCreator)->_setGrabMode(false);
 	}
-}
-
-//-------------------------------------------------------------------//
-bool SDLKeyboard::isKeyDown( KeyCode key )
-{
-	return KeyBuffer[key] == 1 ? true : false;
-}
-
-//-------------------------------------------------------------------//
-const std::string& SDLKeyboard::getAsString( KeyCode kc )
-{
-    switch(kc)
-    {
-    case KC_ESCAPE: mGetString = SDL_GetKeyName(SDLK_ESCAPE); break;
-    case KC_1: mGetString = SDL_GetKeyName(SDLK_1); break;
-    case KC_2: mGetString = SDL_GetKeyName(SDLK_2); break;
-    case KC_3: mGetString = SDL_GetKeyName(SDLK_3); break;
-    case KC_4: mGetString = SDL_GetKeyName(SDLK_4); break;
-    case KC_5: mGetString = SDL_GetKeyName(SDLK_5); break;
-    case KC_6: mGetString = SDL_GetKeyName(SDLK_6); break;
-    case KC_7: mGetString = SDL_GetKeyName(SDLK_7); break;
-    case KC_8: mGetString = SDL_GetKeyName(SDLK_8); break;
-    case KC_9: mGetString = SDL_GetKeyName(SDLK_9); break;
-    case KC_0: mGetString = SDL_GetKeyName(SDLK_0); break;
-    case KC_MINUS: mGetString = SDL_GetKeyName(SDLK_MINUS); break;
-    case KC_EQUALS: mGetString = SDL_GetKeyName(SDLK_EQUALS); break;
-    case KC_BACK: mGetString = SDL_GetKeyName(SDLK_BACKSPACE); break;
-    case KC_TAB: mGetString = SDL_GetKeyName(SDLK_TAB); break;
-    case KC_Q: mGetString = SDL_GetKeyName(SDLK_q); break;
-    case KC_W: mGetString = SDL_GetKeyName(SDLK_w); break;
-    case KC_E: mGetString = SDL_GetKeyName(SDLK_e); break;
-    case KC_R: mGetString = SDL_GetKeyName(SDLK_r); break;
-    case KC_T: mGetString = SDL_GetKeyName(SDLK_t); break;
-    case KC_Y: mGetString = SDL_GetKeyName(SDLK_y); break;
-    case KC_U: mGetString = SDL_GetKeyName(SDLK_u); break;
-    case KC_I: mGetString = SDL_GetKeyName(SDLK_i); break;
-    case KC_O: mGetString = SDL_GetKeyName(SDLK_o); break;
-    case KC_P: mGetString = SDL_GetKeyName(SDLK_p); break;
-    case KC_LBRACKET: mGetString = "["; break;
-    case KC_RBRACKET: mGetString = "]"; break;
-    case KC_RETURN: mGetString = SDL_GetKeyName(SDLK_RETURN); break;
-    case KC_LCONTROL: mGetString = SDL_GetKeyName(SDLK_LCTRL); break;
-    case KC_A: mGetString = SDL_GetKeyName(SDLK_a); break;
-    case KC_S: mGetString = SDL_GetKeyName(SDLK_s); break;
-    case KC_D: mGetString = SDL_GetKeyName(SDLK_d); break;
-    case KC_F: mGetString = SDL_GetKeyName(SDLK_f); break;
-    case KC_G: mGetString = SDL_GetKeyName(SDLK_g); break;
-    case KC_H: mGetString = SDL_GetKeyName(SDLK_h); break;
-    case KC_J: mGetString = SDL_GetKeyName(SDLK_j); break;
-    case KC_K: mGetString = SDL_GetKeyName(SDLK_k); break;
-    case KC_L: mGetString = SDL_GetKeyName(SDLK_l); break;
-    case KC_SEMICOLON: mGetString = SDL_GetKeyName(SDLK_SEMICOLON); break;
-    case KC_APOSTROPHE: mGetString = SDL_GetKeyName(SDLK_QUOTE); break;
-    case KC_GRAVE: mGetString = SDL_GetKeyName(SDLK_BACKQUOTE); break;
-    case KC_LSHIFT: mGetString = SDL_GetKeyName(SDLK_LSHIFT); break;
-    case KC_BACKSLASH: mGetString = SDL_GetKeyName(SDLK_BACKSLASH); break;
-    case KC_Z: mGetString = SDL_GetKeyName(SDLK_z); break;
-    case KC_X: mGetString = SDL_GetKeyName(SDLK_x); break;
-    case KC_C: mGetString = SDL_GetKeyName(SDLK_c); break;
-    case KC_V: mGetString = SDL_GetKeyName(SDLK_v); break;
-    case KC_B: mGetString = SDL_GetKeyName(SDLK_b); break;
-    case KC_N: mGetString = SDL_GetKeyName(SDLK_n); break;
-    case KC_M: mGetString = SDL_GetKeyName(SDLK_m); break;
-    case KC_COMMA: mGetString = SDL_GetKeyName(SDLK_COMMA); break;
-    case KC_PERIOD: mGetString = SDL_GetKeyName(SDLK_PERIOD); break;
-    case KC_SLASH: mGetString = SDL_GetKeyName(SDLK_SLASH); break;
-    case KC_RSHIFT: mGetString = SDL_GetKeyName(SDLK_RSHIFT); break;
-    case KC_MULTIPLY: mGetString = SDL_GetKeyName(SDLK_KP_MULTIPLY); break;
-    case KC_LMENU: mGetString = SDL_GetKeyName(SDLK_LALT); break;
-    case KC_SPACE: mGetString = SDL_GetKeyName(SDLK_SPACE); break;
-    case KC_CAPITAL: mGetString = SDL_GetKeyName(SDLK_CAPSLOCK); break;
-    case KC_F1: mGetString = SDL_GetKeyName(SDLK_F1); break;
-    case KC_F2: mGetString = SDL_GetKeyName(SDLK_F2); break;
-    case KC_F3: mGetString = SDL_GetKeyName(SDLK_F3); break;
-    case KC_F4: mGetString = SDL_GetKeyName(SDLK_F4); break;
-    case KC_F5: mGetString = SDL_GetKeyName(SDLK_F5); break;
-    case KC_F6: mGetString = SDL_GetKeyName(SDLK_F6); break;
-    case KC_F7: mGetString = SDL_GetKeyName(SDLK_F7); break;
-    case KC_F8: mGetString = SDL_GetKeyName(SDLK_F8); break;
-    case KC_F9: mGetString = SDL_GetKeyName(SDLK_F9); break;
-    case KC_F10: mGetString = SDL_GetKeyName(SDLK_F10); break;
-    case KC_NUMLOCK: mGetString = SDL_GetKeyName(SDLK_NUMLOCK); break;
-    case KC_SCROLL: mGetString = SDL_GetKeyName(SDLK_SCROLLOCK); break;
-    case KC_NUMPAD7: mGetString = SDL_GetKeyName(SDLK_KP7); break;
-    case KC_NUMPAD8: mGetString = SDL_GetKeyName(SDLK_KP8); break;
-    case KC_NUMPAD9: mGetString = SDL_GetKeyName(SDLK_KP9); break;
-    case KC_SUBTRACT: mGetString = SDL_GetKeyName(SDLK_KP_MINUS); break;
-    case KC_NUMPAD4: mGetString = SDL_GetKeyName(SDLK_KP4); break;
-    case KC_NUMPAD5: mGetString = SDL_GetKeyName(SDLK_KP5); break;
-    case KC_NUMPAD6: mGetString = SDL_GetKeyName(SDLK_KP6); break;
-    case KC_ADD: mGetString = SDL_GetKeyName(SDLK_KP_PLUS); break;
-    case KC_NUMPAD1: mGetString = SDL_GetKeyName(SDLK_KP1); break;
-    case KC_NUMPAD2: mGetString = SDL_GetKeyName(SDLK_KP2); break;
-    case KC_NUMPAD3: mGetString = SDL_GetKeyName(SDLK_KP3); break;
-    case KC_NUMPAD0: mGetString = SDL_GetKeyName(SDLK_KP0); break;
-    case KC_DECIMAL: mGetString = SDL_GetKeyName(SDLK_KP_PERIOD); break;
-    case KC_OEM_102: mGetString = "OEM_102"; break;
-    case KC_F11: mGetString = SDL_GetKeyName(SDLK_F11); break;
-    case KC_F12: mGetString = SDL_GetKeyName(SDLK_F12); break;
-    case KC_F13: mGetString = SDL_GetKeyName(SDLK_F13); break;
-    case KC_F14: mGetString = SDL_GetKeyName(SDLK_F14); break;
-    case KC_F15: mGetString = SDL_GetKeyName(SDLK_F15); break;
-    case KC_KANA: mGetString = "Kana"; break;
-    case KC_ABNT_C1: mGetString = "ABNT_C1"; break;
-    case KC_CONVERT: mGetString = "CONVERT"; break;
-    case KC_NOCONVERT: mGetString = "NOCONVERT"; break;
-    case KC_YEN: mGetString = "YEN"; break;
-    case KC_ABNT_C2: mGetString = "ABNT_C2"; break;
-    case KC_NUMPADEQUALS: mGetString = SDL_GetKeyName(SDLK_KP_EQUALS); break;
-    case KC_PREVTRACK: mGetString = "KC_PREVTRACK"; break;
-    case KC_AT: mGetString = "KC_AT"; break;
-    case KC_COLON: mGetString = SDL_GetKeyName(SDLK_COLON); break;
-    case KC_UNDERLINE: mGetString = "KC_UNDERLINE"; break;
-    case KC_KANJI: mGetString = "KC_KANJI"; break;
-    case KC_STOP: mGetString = "KC_STOP"; break;
-    case KC_AX: mGetString = "KC_AX"; break;
-    case KC_UNLABELED: mGetString = "KC_UNLABELED"; break;
-    case KC_NEXTTRACK: mGetString = "KC_NEXTTRACK"; break;
-    case KC_NUMPADENTER: mGetString = "KC_NUMPADENTER"; break;
-    case KC_RCONTROL: mGetString = "KC_RCONTROL"; break;
-    case KC_MUTE: mGetString = "KC_MUTE"; break;
-    case KC_CALCULATOR: mGetString = "KC_CALCULATOR"; break;
-    case KC_PLAYPAUSE: mGetString = "KC_PLAYPAUSE"; break;
-    case KC_MEDIASTOP: mGetString = "KC_MEDIASTOP"; break;
-    case KC_VOLUMEDOWN: mGetString = "KC_VOLUMEDOWN"; break;
-    case KC_VOLUMEUP: mGetString = "KC_VOLUMEUP"; break;
-    case KC_WEBHOME: mGetString = "KC_WEBHOME"; break;
-    case KC_NUMPADCOMMA: mGetString = "KC_NUMPADCOMMA"; break;
-    case KC_DIVIDE: mGetString = SDL_GetKeyName(SDLK_KP_DIVIDE); break;
-    case KC_SYSRQ: mGetString = SDL_GetKeyName(SDLK_SYSREQ); break;
-    case KC_RMENU: mGetString = SDL_GetKeyName(SDLK_RALT); break;
-    case KC_PAUSE: mGetString = "Pause"; break;
-    case KC_HOME: mGetString = SDL_GetKeyName(SDLK_HOME); break;
-    case KC_UP: mGetString = SDL_GetKeyName(SDLK_UP); break;
-    case KC_PGUP: mGetString = SDL_GetKeyName(SDLK_PAGEUP); break;
-    case KC_LEFT: mGetString = SDL_GetKeyName(SDLK_LEFT); break;
-    case KC_RIGHT: mGetString = SDL_GetKeyName(SDLK_RIGHT); break;
-    case KC_END:  mGetString = SDL_GetKeyName(SDLK_END); break;
-    case KC_DOWN: mGetString = SDL_GetKeyName(SDLK_DOWN); break;
-    case KC_PGDOWN: mGetString = SDL_GetKeyName(SDLK_PAGEDOWN); break;
-    case KC_INSERT: mGetString = SDL_GetKeyName(SDLK_INSERT); break;
-    case KC_DELETE: mGetString = SDL_GetKeyName(SDLK_DELETE); break;
-    case KC_LWIN: mGetString = SDL_GetKeyName(SDLK_LSUPER); break;
-    case KC_RWIN: mGetString = SDL_GetKeyName(SDLK_RSUPER); break;
-    case KC_APPS: mGetString = "KC_APPS"; break;
-    case KC_POWER: mGetString = "KC_POWER"; break;
-    case KC_SLEEP: mGetString = "KC_SLEEP"; break;
-    case KC_WAKE: mGetString = "KC_WAKE"; break;
-    case KC_WEBSEARCH: mGetString = "KC_WEBSEARCH"; break;
-    case KC_WEBFAVORITES: mGetString = "KC_WEBFAVORITES"; break;
-    case KC_WEBREFRESH: mGetString = "KC_WEBREFRESH"; break;
-    case KC_WEBSTOP: mGetString = "KC_WEBSTOP"; break;
-    case KC_WEBFORWARD: mGetString = "KC_WEBFORWARD"; break;
-    case KC_WEBBACK: mGetString = "KC_WEBBACK"; break;
-    case KC_MYCOMPUTER: mGetString = "KC_MYCOMPUTER"; break;
-    case KC_MAIL: mGetString = "KC_MAIL"; break;
-    case KC_MEDIASELECT: mGetString = "KC_MEDIASELECT"; break;
-    default: mGetString = "Unknown"; break;
-    };
-
-	return mGetString;
-}
-
-//-------------------------------------------------------------------//
-void SDLKeyboard::copyKeyStates( char keys[256] )
-{
-	for(int i = 0; i < 256; ++i)
-		keys[i] = KeyBuffer[i];
 }
 
 //-------------------------------------------------------------------//
 void SDLKeyboard::setBuffered(bool buffered)
 {
 	mBuffered = buffered;
+}
+
+//-------------------------------------------------------------------//
+bool SDLKeyboard::_injectKeyDown( SDLKey key, int text )
+{
+	KeyCode kc = mKeyMap[key];
+	KeyBuffer[kc] = 1;
+
+	//Turn on modifier flags
+	if( kc == KC_LCONTROL || kc == KC_RCONTROL)
+		mModifiers |= Ctrl;
+	else if( kc == KC_LSHIFT || kc == KC_RSHIFT )
+		mModifiers |= Shift;
+	else if( kc == KC_LMENU || kc == KC_RMENU )
+		mModifiers |= Alt;
+
+	if( mBuffered && mListener )
+		return mListener->keyPressed(KeyEvent(this,kc,text));
+
+	return true;
+}
+
+//-------------------------------------------------------------------//
+bool SDLKeyboard::_injectKeyUp( SDLKey key )
+{
+	KeyCode kc = mKeyMap[key];
+	KeyBuffer[kc] = 0;
+
+	//Turn off modifier flags
+	if( kc == KC_LCONTROL || kc == KC_RCONTROL)
+		mModifiers &= ~Ctrl;
+	else if( kc == KC_LSHIFT || kc == KC_RSHIFT )
+		mModifiers &= ~Shift;
+	else if( kc == KC_LMENU || kc == KC_RMENU )
+		mModifiers &= ~Alt;
+
+	if( mBuffered && mListener )
+		return mListener->keyReleased(KeyEvent(this, kc, 0));
+
+	return true;
+}
+
+//-------------------------------------------------------------------//
+const std::string& SDLKeyboard::getAsString( KeyCode kc )
+{
+    mGetString = "Unknown";
+    char *temp = 0;
+
+    KeyMap::iterator i = mKeyMap.begin(),
+            e = mKeyMap.end();
+
+    for( ; i != e; ++i )
+    {
+        if( i->second == kc )
+        {
+            temp = SDL_GetKeyName(i->first);
+            if( temp )
+                mGetString = temp;
+            break;
+        }
+    }
+	return mGetString;
+}
+
+//-------------------------------------------------------------------//
+void SDLKeyboard::copyKeyStates( char keys[256] ) const
+{
+	for(int i = 0; i < 256; ++i)
+		keys[i] = KeyBuffer[i];
 }
 
 //-------------------------------------------------------------------//

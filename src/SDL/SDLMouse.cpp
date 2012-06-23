@@ -28,11 +28,11 @@ restrictions:
 using namespace OIS;
 
 //-------------------------------------------------------------------//
-SDLMouse::SDLMouse( bool buffered ) : mGrabbed(false), mRegainFocus(false)
+SDLMouse::SDLMouse( InputManager* creator, bool buffered, bool grab, bool hide)
+    : Mouse(creator->inputSystemName(), buffered, 0, creator),
+         mGrabbed(grab), mHidden(hide), mRegainFocus(false)
 {
-	mBuffered = buffered;
-	mType = OISMouse;
-	listener = 0;
+    static_cast<SDLInputManager*>(mCreator)->_setMouseUsed(true);
 }
 
 //-------------------------------------------------------------------//
@@ -42,18 +42,26 @@ void SDLMouse::_initialize()
 	mState.clear();
 	mRegainFocus = false;
 
-	_setGrab(true);
-	_setVisible(false);
-	static_cast<SDLInputManager*>(InputManager::getSingletonPtr())->_setGrabMode(true);
+	_setGrab(mGrabbed);
+	_setVisible(!mHidden);
+
+	static_cast<SDLInputManager*>(mCreator)->_setGrabMode(true);
 }
 
 //-------------------------------------------------------------------//
 SDLMouse::~SDLMouse()
 {
-	_setGrab(true);
+	_setGrab(false);
 	_setVisible(true);
 
-	static_cast<SDLInputManager*>(InputManager::getSingletonPtr())->_setGrabMode(false);
+	static_cast<SDLInputManager*>(mCreator)->_setGrabMode(false);
+    static_cast<SDLInputManager*>(mCreator)->_setMouseUsed(false);
+}
+
+//-------------------------------------------------------------------//
+void SDLMouse::setBuffered(bool buffered)
+{
+	mBuffered = buffered;
 }
 
 //-------------------------------------------------------------------//
@@ -63,7 +71,9 @@ void SDLMouse::capture()
 	static const MouseButtonID ButtonMask[4] = {MB_Left, MB_Left, MB_Middle, MB_Right};
 
 	//Clear old relative values
-	mState.relX = mState.relY = mState.relZ = 0;
+	mState.X.rel = 0;
+	mState.Y.rel = 0;
+	mState.Z.rel = 0;
 
 	SDL_Event events[OIS_SDL_MOUSE_BUFF];
 	int count = SDL_PeepEvents(events, OIS_SDL_MOUSE_BUFF, SDL_GETEVENT, SDL_MOUSEEVENTMASK);
@@ -82,17 +92,20 @@ void SDLMouse::capture()
 				if( sdlButton <= SDL_BUTTON_RIGHT )
 				{	//Left, Right, or Middle
 					mState.buttons |= (1 << ButtonMask[sdlButton]);
-					if( mBuffered && listener )
-						if( listener->mousePressed(MouseEvent(this,0,mState), ButtonMask[sdlButton]) == false )
+					if( mBuffered && mListener )
+						if( mListener->mousePressed(MouseEvent(this, mState), ButtonMask[sdlButton]) == false )
 							return;
 				}
 				else
 				{	//mouse Wheel
 					mouseZMoved = true;
-					if( sdlButton == SDL_BUTTON_WHEELUP )
-						mState.relZ += 120;
-					else if( sdlButton == SDL_BUTTON_WHEELDOWN )
-						mState.relZ -= 120;
+					if( sdlButton == SDL_BUTTON_WHEELUP ) {
+						mState.Z.rel += 120;
+                        mState.Z.abs += 120;
+                    } else if( sdlButton == SDL_BUTTON_WHEELDOWN ) {
+						mState.Z.rel -= 120;
+                        mState.Z.abs -= 120;
+                    }
 				}
 				break;
 			}
@@ -102,8 +115,8 @@ void SDLMouse::capture()
 				if( sdlButton <= SDL_BUTTON_RIGHT )
 				{	//Left, Right, or Middle
 					mState.buttons &= ~(1 << ButtonMask[sdlButton]);
-					if( mBuffered && listener )
-						if( listener->mouseReleased(MouseEvent(this,0,mState), ButtonMask[sdlButton]) == false )
+					if( mBuffered && mListener )
+						if( mListener->mouseReleased( MouseEvent(this, mState), ButtonMask[sdlButton]) == false )
 							return;
 				}
 				break;
@@ -112,24 +125,20 @@ void SDLMouse::capture()
 	}
 
 	//Handle X/Y axis move
-	if( mouseXYMoved )
-	{
-		SDL_GetMouseState( &mState.abX, &mState.abY );
-		SDL_GetRelativeMouseState( &mState.relX, &mState.relY );
+    if (mouseXYMoved || mouseZMoved )
+    {
+        if( mouseXYMoved )
+        {
+            SDL_GetMouseState( &mState.X.abs, &mState.X.abs );
+            SDL_GetRelativeMouseState( &mState.X.rel, &mState.X.rel );
 
-		if( mBuffered && listener )
-			listener->mouseMoved(MouseEvent(this, 0, mState));
-	}
-	//Handle Z Motion
-	if( mouseZMoved )
-	{
-		mState.abZ += mState.relZ;
-		if( mBuffered && listener )
-			listener->mouseMoved(MouseEvent(this, 0, mState));
-	}
+        }
+        if( mBuffered && mListener )
+            mListener->mouseMoved( MouseEvent(this, mState) );
+    }
 
 	//Handle Alt-Tabbing
-	SDLInputManager* man = static_cast<SDLInputManager*>(InputManager::getSingletonPtr());
+	SDLInputManager* man = static_cast<SDLInputManager*>(mCreator);
 	if( man->_getGrabMode() == false )
 	{
 		if( mRegainFocus == false && mGrabbed == true )
@@ -140,16 +149,10 @@ void SDLMouse::capture()
 		else if( mRegainFocus == true && mGrabbed == false )
 		{	//We are gaining focus back (mouse clicked in window)
 			_setGrab(true);
-			_setVisible(false);
+			_setVisible(!mHidden);
 			man->_setGrabMode(true);	//Notify manager
 		}
 	}
-}
-
-//-------------------------------------------------------------------//
-void SDLMouse::setBuffered(bool buffered)
-{
-	mBuffered = buffered;
 }
 
 //-------------------------------------------------------------------//
@@ -166,7 +169,6 @@ void SDLMouse::_setGrab(bool grabbed)
 //-------------------------------------------------------------------//
 void SDLMouse::_setVisible(bool visible)
 {
-
 	if( visible )
 		SDL_ShowCursor(SDL_ENABLE);
 	else

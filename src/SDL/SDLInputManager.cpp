@@ -32,8 +32,10 @@ using namespace OIS;
 const std::string SDLInputManager::iName = "SDL Input Wrapper";
 
 //--------------------------------------------------------------------------------//
-SDLInputManager::SDLInputManager() : mGrabbed(false)
+SDLInputManager::SDLInputManager() : InputManager("SDLInputManager"),
+        mGrabMouse(true), mHideMouse(true), mKeyboardUsed(false), mMouseUsed(false)
 {
+    mFactories.push_back(this);
 }
 
 //--------------------------------------------------------------------------------//
@@ -48,7 +50,6 @@ void SDLInputManager::_initialize( ParamList &paramList )
 	if( flags == 0 )
 		OIS_EXCEPT( E_General, "SDLInputManager::SDLInputManager >> SDL Not Initialized already!");
 
-	//Ok, now we have DirectInput, parse whatever extra settings were sent to us
 	_parseConfigSettings( paramList );
 	_enumerateDevices();
 }
@@ -56,6 +57,18 @@ void SDLInputManager::_initialize( ParamList &paramList )
 //--------------------------------------------------------------------------------//
 void SDLInputManager::_parseConfigSettings( ParamList &paramList )
 {
+    ParamList::iterator i;
+
+    //--------- Mouse Settings ------------//
+    i = paramList.find("sdl_mouse_grab");
+    if (i != paramList.end() )
+        if ( i->second == "false" )
+            mGrabMouse = false;
+
+	i = paramList.find("sdl_mouse_hide");
+	if( i != paramList.end() )
+		if( i->second == "false" )
+			mHideMouse = false;
 }
 
 //--------------------------------------------------------------------------------//
@@ -63,33 +76,62 @@ void SDLInputManager::_enumerateDevices()
 {
 }
 
-//--------------------------------------------------------------------------------//
-int SDLInputManager::numJoySticks()
+//----------------------------------------------------------------------------//
+DeviceList SDLInputManager::freeDeviceList()
 {
-	return 0;
-}
-
-//--------------------------------------------------------------------------------//
-int SDLInputManager::numMice()
-{
-	return 1;
-}
-
-//--------------------------------------------------------------------------------//
-int SDLInputManager::numKeyboards()
-{
-	return 1;
+    
 }
 
 //----------------------------------------------------------------------------//
-Object* SDLInputManager::createInputObject( Type iType, bool bufferMode )
+int SDLInputManager::totalDevices(Type iType)
+{
+	switch(iType)
+	{
+//	case OISKeyboard: return window ? 1 : 0;
+//	case OISMouse: return window ? 1 : 0;
+//	case OISJoyStick: return joySticks;
+	default: return 0;
+	}
+}
+
+//----------------------------------------------------------------------------//
+bool SDLInputManager::vendorExist(Type iType, const std::string & vendor)
+{
+//	if((iType == OISKeyboard || iType == OISMouse) && vendor == mInputSystemName)
+//	{
+//		return window ? true : false;
+//	}
+//	else if( iType == OISJoyStick )
+//	{
+//		for(JoyStickInfoList::iterator i = unusedJoyStickList.begin(); i != unusedJoyStickList.end(); ++i)
+//			if(i->vendor == vendor)
+//				return true;
+//	}
+
+	return false;
+}
+
+//----------------------------------------------------------------------------//
+int SDLInputManager::freeDevices(Type iType)
+{
+	switch(iType)
+	{
+//	case OISKeyboard: return window ? (keyboardUsed ? 0 : 1) : 0;
+//	case OISMouse: return window ? (mouseUsed ? 0 : 1) : 0;
+//	case OISJoyStick: return (int)unusedJoyStickList.size();
+	default: return 0;
+	}
+}
+
+//----------------------------------------------------------------------------//
+Object* SDLInputManager::createObject(InputManager *creator, Type iType, bool bufferMode, const std::string & vendor)
 {
 	Object* obj = 0;
 	
 	switch( iType )
 	{
-		case OISKeyboard: obj = new SDLKeyboard( bufferMode ); break;
-		case OISMouse: obj = new SDLMouse( bufferMode ); break;
+		case OISKeyboard: obj = new SDLKeyboard( this, bufferMode ); break;
+		case OISMouse: obj = new SDLMouse( this, bufferMode, mGrabMouse, mHideMouse ); break;
 		case OISJoyStick: 
 		default: OIS_EXCEPT( E_InputDeviceNotSupported, "Type not implemented");
 	}
@@ -106,7 +148,7 @@ Object* SDLInputManager::createInputObject( Type iType, bool bufferMode )
 }
 
 //----------------------------------------------------------------------------//
-void SDLInputManager::destroyInputObject( Object* obj )
+void SDLInputManager::destroyObject( Object* obj )
 {
 	if( obj == 0 ) return;
 

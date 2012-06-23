@@ -37,17 +37,17 @@ namespace OIS
 		@param buffered
 			True for buffered input mode
 		*/
-		SDLKeyboard( bool buffered );
+		SDLKeyboard(InputManager* creator, bool buffered );
 		virtual ~SDLKeyboard();
 
 		/** @copydoc Keyboard::isKeyDown */
-		virtual bool isKeyDown( KeyCode key );
+		virtual bool isKeyDown( KeyCode key ) const;
 
 		/** @copydoc Keyboard::getAsString */
 		virtual const std::string& getAsString( KeyCode kc );
 
 		/** @copydoc Keyboard::copyKeyStates */
-		virtual void copyKeyStates( char keys[256] );
+		virtual void copyKeyStates( char keys[256] ) const;
 
 		/** @copydoc Object::setBuffered */
 		virtual void setBuffered(bool buffered);
@@ -65,7 +65,8 @@ namespace OIS
 		virtual void setTextTranslation( TextTranslationMode mode );
 
 	protected:
-		SDLKeyboard() {}
+		bool _injectKeyDown( SDLKey key, int text );
+		bool _injectKeyUp( SDLKey key );
 
 		typedef std::map<SDLKey, KeyCode> KeyMap;
         KeyMap mKeyMap;
