@@ -222,7 +222,7 @@ LinuxKeyboard::~LinuxKeyboard()
 		XCloseDisplay(display);
 	}
 
-	static_cast<LinuxInputManager*>(mCreator)->_setKeyboardUsed(true);
+	static_cast<LinuxInputManager*>(mCreator)->_setKeyboardUsed(false);
 }
 
 //-------------------------------------------------------------------//
