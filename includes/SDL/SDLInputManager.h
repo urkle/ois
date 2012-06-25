@@ -76,6 +76,10 @@ namespace OIS
 		//! internal class method for finding attached devices
 		void _enumerateDevices();
 
+        //! List of unused joysticks ready to be used
+		JoyStickInfoList unusedJoyStickList;
+        //! Number of joysticks found
+        char joySticks;
 
         //! Used to know if we used up keyboard
 		bool mKeyboardUsed;

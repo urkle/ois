@@ -35,4 +35,30 @@ restrictions:
 #define OIS_SDL_MOUSE_BUFF 50
 #define OIS_SDL_JOY_BUFF   80
 
+namespace OIS
+{
+	class JoyStickInfo
+	{
+	public:
+		JoyStickInfo(): devId(-1),axes(0),buttons(0),hats(0),balls(0) {}
+		//! Device index number (from SDL)
+		int devId;
+		//! Joy vendor
+		std::string vendor;
+		//! Number of axes
+		unsigned char axes;
+		//! Number of buttons
+		unsigned char buttons;
+		//! Number of hats
+		unsigned char hats;
+        //! Number of balls
+        unsigned char balls;
+		//! Maps Linux button values to OIS buttons values
+		std::map<int, int> button_map;
+		//! Maps Linux axis values to OIS axis
+		std::map<int, int> axis_map;
+	};
+
+	typedef std::vector< JoyStickInfo > JoyStickInfoList;
+}
 #endif
