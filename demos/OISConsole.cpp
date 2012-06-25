@@ -83,48 +83,48 @@ public:
 	bool keyReleased( const KeyEvent &arg ) {
 		if( arg.key == KC_ESCAPE || arg.key == KC_Q )
 			appRunning = false;
-		std::cout << "KeyReleased {" << ((Keyboard*)(arg.device))->getAsString(arg.key) << "}\n";
+		std::cout << "KeyReleased {" << ((Keyboard*)(arg.device))->getAsString(arg.key) << "}" << std::endl;
 		return true;
 	}
 	bool mouseMoved( const MouseEvent &arg ) {
 		const OIS::MouseState& s = arg.state;
-		std::cout << "\nMouseMoved: Abs("
+		std::cout << "MouseMoved: Abs("
 				  << s.X.abs << ", " << s.Y.abs << ", " << s.Z.abs << ") Rel("
-				  << s.X.rel << ", " << s.Y.rel << ", " << s.Z.rel << ")";
+				  << s.X.rel << ", " << s.Y.rel << ", " << s.Z.rel << ")" << std::endl;
 		return true;
 	}
 	bool mousePressed( const MouseEvent &arg, MouseButtonID id ) {
 		const OIS::MouseState& s = arg.state;
-		std::cout << "\nMouse button #" << id << " pressed. Abs("
+		std::cout << "Mouse button #" << id << " pressed. Abs("
 				  << s.X.abs << ", " << s.Y.abs << ", " << s.Z.abs << ") Rel("
-				  << s.X.rel << ", " << s.Y.rel << ", " << s.Z.rel << ")";
+				  << s.X.rel << ", " << s.Y.rel << ", " << s.Z.rel << ")" << std::endl;
 		return true;
 	}
 	bool mouseReleased( const MouseEvent &arg, MouseButtonID id ) {
 		const OIS::MouseState& s = arg.state;
-		std::cout << "\nMouse button #" << id << " released. Abs("
+		std::cout << "Mouse button #" << id << " released. Abs("
 				  << s.X.abs << ", " << s.Y.abs << ", " << s.Z.abs << ") Rel("
-				  << s.X.rel << ", " << s.Y.rel << ", " << s.Z.rel << ")";
+				  << s.X.rel << ", " << s.Y.rel << ", " << s.Z.rel << ")" << std::endl;
 		return true;
 	}
 	bool buttonPressed( const JoyStickEvent &arg, int button ) {
-		std::cout << std::endl << arg.device->vendor() << ". Button Pressed # " << button;
+		std::cout << arg.device->vendor() << ". Button Pressed # " << button << std::endl;
 		return true;
 	}
 	bool buttonReleased( const JoyStickEvent &arg, int button ) {
-		std::cout << std::endl << arg.device->vendor() << ". Button Released # " << button;
+		std::cout << arg.device->vendor() << ". Button Released # " << button << std::endl;
 		return true;
 	}
 	bool axisMoved( const JoyStickEvent &arg, int axis )
 	{
 		//Provide a little dead zone
 		if( arg.state.mAxes[axis].abs > 2500 || arg.state.mAxes[axis].abs < -2500 )
-			std::cout << std::endl << arg.device->vendor() << ". Axis # " << axis << " Value: " << arg.state.mAxes[axis].abs;
+			std::cout << arg.device->vendor() << ". Axis # " << axis << " Value: " << arg.state.mAxes[axis].abs << std::endl;
 		return true;
 	}
 	bool povMoved( const JoyStickEvent &arg, int pov )
 	{
-		std::cout << std::endl << arg.device->vendor() << ". POV" << pov << " ";
+		std::cout << arg.device->vendor() << ". POV" << pov << " ";
 
 		if( arg.state.mPOV[pov].direction & Pov::North ) //Going up
 			std::cout << "North";
@@ -138,6 +138,8 @@ public:
 
 		if( arg.state.mPOV[pov].direction == Pov::Centered ) //stopped/centered out
 			std::cout << "Centered";
+        
+        std::cout << std::endl;
 		return true;
 	}
 
@@ -145,10 +147,11 @@ public:
 	{
 		std::cout.precision(2);
 		std::cout.flags(std::ios::fixed | std::ios::right);
-		std::cout << std::endl << arg.device->vendor() << ". Orientation # " << index 
+		std::cout << arg.device->vendor() << ". Orientation # " << index 
 			<< " X Value: " << arg.state.mVectors[index].x
 			<< " Y Value: " << arg.state.mVectors[index].y
-			<< " Z Value: " << arg.state.mVectors[index].z;
+			<< " Z Value: " << arg.state.mVectors[index].z
+            << std::endl;
 		std::cout.precision();
 		std::cout.flags();
 		return true;
@@ -160,11 +163,11 @@ EventHandler handler;
 
 int main()
 {
-	std::cout << "\n\n*** OIS Console Demo App is starting up... *** \n";
+	std::cout << "\n\n*** OIS Console Demo App is starting up... ***" << std::endl;
 	try
 	{
 		doStartup();
-		std::cout << "\nStartup done... Hit 'q' or ESC to exit.\n\n";
+		std::cout << "\nStartup done... Hit 'q' or ESC to exit.\n" << std::endl;
 
 		while(appRunning)
 		{
@@ -218,8 +221,8 @@ int main()
 		  MessageBox( NULL, ex.eText, "An exception has occurred!", MB_OK |
 				MB_ICONERROR | MB_TASKMODAL);
 		#else
-		  std::cout << "\nOIS Exception Caught!\n" << "\t" << ex.eText << "[Line "
-			<< ex.eLine << " in " << ex.eFile << "]\nExiting App";
+		  std::cout << "OIS Exception Caught!\n" << "\t" << ex.eText << "[Line "
+			<< ex.eLine << " in " << ex.eFile << "]\nExiting App" << std::endl;
 		#endif
 	}
 	catch(std::exception &ex)
@@ -228,7 +231,7 @@ int main()
 	}
 
 	//Destroying the manager will cleanup unfreed devices
-	std::cout << "Cleaning up...\n";
+	std::cout << "Cleaning up..." << std::endl;
 	if( g_InputManager )
 		InputManager::destroyInputSystem(g_InputManager);
 
@@ -240,7 +243,7 @@ int main()
 	XCloseDisplay(xDisp);
 #endif
 
-	std::cout << "\nGoodbye!\n";
+	std::cout << "\nGoodbye!" << std::endl;
 	return 0;
 }
 
@@ -253,7 +256,7 @@ void doStartup()
     SDL_Init(SDL_INIT_VIDEO);
 
     //Create an SDL window
-    sdl_win = SDL_SetVideoMode(2020, 200, 32, 0);
+    sdl_win = SDL_SetVideoMode(200, 200, 32, 0);
 	if( sdl_win == 0 )
 		OIS_EXCEPT(E_General, "Error opening SDL Window!");
 
@@ -357,17 +360,17 @@ void doStartup()
 
 	//Print debugging information
 	unsigned int v = g_InputManager->getVersionNumber();
-	std::cout << "OIS Version: " << (v>>16 ) << "." << ((v>>8) & 0x000000FF) << "." << (v & 0x000000FF)
-		<< "\nRelease Name: " << g_InputManager->getVersionName()
-		<< "\nManager: " << g_InputManager->inputSystemName()
-		<< "\nTotal Keyboards: " << g_InputManager->getNumberOfDevices(OISKeyboard)
-		<< "\nTotal Mice: " << g_InputManager->getNumberOfDevices(OISMouse)
-		<< "\nTotal JoySticks: " << g_InputManager->getNumberOfDevices(OISJoyStick);
+	std::cout << "OIS Version: " << (v>>16 ) << "." << ((v>>8) & 0x000000FF) << "." << (v & 0x000000FF) << std::endl
+        << "Release Name: " << g_InputManager->getVersionName() << std::endl
+        << "Manager: " << g_InputManager->inputSystemName() << std::endl
+        << "Total Keyboards: " << g_InputManager->getNumberOfDevices(OISKeyboard) << std::endl
+        << "Total Mice: " << g_InputManager->getNumberOfDevices(OISMouse) << std::endl
+        << "Total JoySticks: " << g_InputManager->getNumberOfDevices(OISJoyStick) << std::endl;
 
 	//List all devices
 	DeviceList list = g_InputManager->listFreeDevices();
 	for( DeviceList::iterator i = list.begin(); i != list.end(); ++i )
-		std::cout << "\n\tDevice: " << g_DeviceType[i->first] << " Vendor: " << i->second;
+		std::cout << "\tDevice: " << g_DeviceType[i->first] << " Vendor: " << i->second << std::endl;
 
 	g_kb = (Keyboard*)g_InputManager->createInputObject( OISKeyboard, true );
 	g_kb->setEventCallback( &handler );
@@ -386,12 +389,12 @@ void doStartup()
 		{
 			g_joys[i] = (JoyStick*)g_InputManager->createInputObject( OISJoyStick, true );
 			g_joys[i]->setEventCallback( &handler );
-			std::cout << "\n\nCreating Joystick " << (i + 1)
-				<< "\n\tAxes: " << g_joys[i]->getNumberOfComponents(OIS_Axis)
-				<< "\n\tSliders: " << g_joys[i]->getNumberOfComponents(OIS_Slider)
-				<< "\n\tPOV/HATs: " << g_joys[i]->getNumberOfComponents(OIS_POV)
-				<< "\n\tButtons: " << g_joys[i]->getNumberOfComponents(OIS_Button)
-				<< "\n\tVector3: " << g_joys[i]->getNumberOfComponents(OIS_Vector3);
+			std::cout << "\nCreating Joystick " << (i + 1) << std::endl
+				<< "\tAxes: " << g_joys[i]->getNumberOfComponents(OIS_Axis) << std::endl
+				<< "\tSliders: " << g_joys[i]->getNumberOfComponents(OIS_Slider) << std::endl
+				<< "\tPOV/HATs: " << g_joys[i]->getNumberOfComponents(OIS_POV) << std::endl
+				<< "\tButtons: " << g_joys[i]->getNumberOfComponents(OIS_Button) << std::endl
+				<< "\tVector3: " << g_joys[i]->getNumberOfComponents(OIS_Vector3) << std::endl;
 		}
 	}
 	catch(OIS::Exception &ex)
@@ -406,11 +409,11 @@ void handleNonBufferedKeys()
 		appRunning = false;
 
 	if( g_kb->isModifierDown(Keyboard::Shift) )
-		std::cout << "Shift is down..\n";
+		std::cout << "Shift is down.." << std::endl;
 	if( g_kb->isModifierDown(Keyboard::Alt) )
-		std::cout << "Alt is down..\n";
+		std::cout << "Alt is down.." << std::endl;
 	if( g_kb->isModifierDown(Keyboard::Ctrl) )
-		std::cout << "Ctrl is down..\n";
+		std::cout << "Ctrl is down.." << std::endl;
 }
 
 void handleNonBufferedMouse()
@@ -418,7 +421,7 @@ void handleNonBufferedMouse()
 	//Just dump the current mouse state
 	const MouseState &ms = g_m->getMouseState();
 	std::cout << "\nMouse: Abs(" << ms.X.abs << " " << ms.Y.abs << " " << ms.Z.abs
-		<< ") B: " << ms.buttons << " Rel(" << ms.X.rel << " " << ms.Y.rel << " " << ms.Z.rel << ")";
+		<< ") B: " << ms.buttons << " Rel(" << ms.X.rel << " " << ms.Y.rel << " " << ms.Z.rel << ")" << std::endl;
 }
 
 void handleNonBufferedJoy( JoyStick* js )
@@ -426,7 +429,7 @@ void handleNonBufferedJoy( JoyStick* js )
 	//Just dump the current joy state
 	const JoyStickState &joy = js->getJoyStickState();
 	for( unsigned int i = 0; i < joy.mAxes.size(); ++i )
-		std::cout << "\nAxis " << i << " X: " << joy.mAxes[i].abs;
+		std::cout << "Axis " << i << " X: " << joy.mAxes[i].abs << std::endl;
 }
 
 #if defined OIS_WIN32_PLATFORM
