@@ -257,7 +257,7 @@ void doStartup()
     SDL_Init(SDL_INIT_VIDEO);
 
     //Create an SDL window
-    sdl_win = SDL_SetVideoMode(200, 200, 32, 0);
+    sdl_win = SDL_SetVideoMode(100, 100, 32, 0);
 	if( sdl_win == 0 )
 		OIS_EXCEPT(E_General, "Error opening SDL Window!");
 

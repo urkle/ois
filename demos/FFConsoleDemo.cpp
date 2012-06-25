@@ -819,7 +819,7 @@ class Application
 
 #if defined OIS_SDL_PLATFORM
       SDL_Init(SDL_INIT_VIDEO);
-      _sdl_win = SDL_SetVideoMode(200, 200, 32, 0);
+      _sdl_win = SDL_SetVideoMode(100, 100, 32, 0);
       if (_sdl_win == 0) 
           OIS_EXCEPT(E_General, "Failed to create SDL Window!");
 #elif defined OIS_WIN32_PLATFORM
