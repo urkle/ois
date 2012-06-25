@@ -174,6 +174,7 @@ int main()
 			//Throttle down CPU usage
             #if defined OIS_SDL_PLATFORM
               SDL_Delay(90);
+              SDL_PumpEvents();
 			#elif defined OIS_WIN32_PLATFORM
 			  Sleep(90);
 			  MSG  msg;
