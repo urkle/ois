@@ -129,8 +129,8 @@ void SDLMouse::capture()
     {
         if( mouseXYMoved )
         {
-            SDL_GetMouseState( &mState.X.abs, &mState.X.abs );
-            SDL_GetRelativeMouseState( &mState.X.rel, &mState.X.rel );
+            SDL_GetMouseState( &mState.X.abs, &mState.Y.abs );
+            SDL_GetRelativeMouseState( &mState.X.rel, &mState.Y.rel );
 
         }
         if( mBuffered && mListener )
