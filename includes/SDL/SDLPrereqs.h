@@ -53,11 +53,7 @@ namespace OIS
 		unsigned char hats;
         //! Number of balls
         unsigned char balls;
-		//! Maps Linux button values to OIS buttons values
-		std::map<int, int> button_map;
-		//! Maps Linux axis values to OIS axis
-		std::map<int, int> axis_map;
-	};
+    };
 
 	typedef std::vector< JoyStickInfo > JoyStickInfoList;
 }

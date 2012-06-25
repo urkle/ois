@@ -57,14 +57,10 @@ namespace OIS
 		JoyStickInfo _getJoyInfo();
 
 		static JoyStickInfoList _scanJoys();
-		static void _clearJoys(JoyStickInfoList &joys);
 	protected:
 
 		SDL_Joystick* mJoyStick;
-		std::map <int, int> mButtonMap;
-		std::map <int, int> mAxisMap;
-        
-        int mBalls;
+        unsigned char mBalls;
 	};
 }
 

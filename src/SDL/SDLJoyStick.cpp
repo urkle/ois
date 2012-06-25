@@ -40,9 +40,6 @@ SDLJoyStick::SDLJoyStick(InputManager* creator, bool buffered, const JoyStickInf
 
 	mPOVs = js.hats;
     mBalls = js.balls;
-
-	mButtonMap = js.button_map;
-	mAxisMap = js.axis_map;
 }
 
 SDLJoyStick::~SDLJoyStick()
@@ -56,8 +53,6 @@ SDLJoyStick::~SDLJoyStick()
 void SDLJoyStick::_initialize()
 {
     mJoyStick = SDL_JoystickOpen(mDevID);
-	//Clear old joy state
-	mState.mAxes.resize(mAxisMap.size());
 	mState.clear();
 
 	if( mJoyStick == 0 )
@@ -79,12 +74,18 @@ void SDLJoyStick::capture()
 
     for ( int i =0; i < count; ++i )
 	{
+        // This works as all Joystick event type have the "which" in the same spot
+        if (events[i].jbutton.which != mDevID) {
+            // skip events that aren't for "this" joystick
+            SDL_PushEvent(&events[i]);
+            continue;
+        }
         switch( events[i].type )
         {
             case SDL_JOYBUTTONDOWN:
             case SDL_JOYBUTTONUP:
             {
-                int button = mButtonMap[events[i].jbutton.button];
+                int button = events[i].jbutton.button;
                 if (events[i].jbutton.state == SDL_PRESSED)
                 {
                     mState.mButtons[button] = true;
@@ -101,7 +102,7 @@ void SDLJoyStick::capture()
             }
             case SDL_JOYAXISMOTION:
             {
-                int axis = mAxisMap[events[i].jaxis.axis];
+                int axis = events[i].jaxis.axis;
                 axisMoved[axis] = true;
                 mState.mAxes[axis].abs = events[i].jaxis.value;
                 break;
@@ -135,8 +136,7 @@ void SDLJoyStick::capture()
 	//All axes are combined into one movement per pair per captured frame
 	if( mBuffered && mListener )
 	{
-        size_t count = std::max((int)mAxisMap.size(), 32);
-		for( int i = 0; i < count; ++i )
+		for( int i = 0; i < 32; ++i )
 			if( axisMoved[i] )
 				if( mListener->axisMoved( JoyStickEvent(this,mState), i) == false )
 					return;
@@ -164,8 +164,6 @@ JoyStickInfo SDLJoyStick::_getJoyInfo()
 	js.buttons = (int)mState.mButtons.size();
 	js.hats = mPOVs;
     js.balls = mBalls;
-	js.button_map = mButtonMap;
-	js.axis_map = mAxisMap;
 
 	return js;
 }
@@ -196,30 +194,11 @@ JoyStickInfoList SDLJoyStick::_scanJoys()
             joyinfo.balls = SDL_JoystickNumBalls(joy);
             SDL_JoystickClose(joy);
 
-            joyinfo.button_map.clear();
-            for (int b = 0; b < joyinfo.buttons; ++b)
-            {
-                joyinfo.button_map[b] = b;
-            }
-
-            joyinfo.axis_map.clear();
-            for (int a = 0; a < joyinfo.axes; ++a)
-            {
-                joyinfo.axis_map[a] = a;
-                // SDL Range is the same as OIS range, so no need for range maps
-            }
-
             joys.push_back(joyinfo);
         }
 	}
 
 	return joys;
-}
-
-//-------------------------------------------------------------------//
-void SDLJoyStick::_clearJoys(JoyStickInfoList &joys)
-{
-	joys.clear();
 }
 
 //-------------------------------------------------------------------//

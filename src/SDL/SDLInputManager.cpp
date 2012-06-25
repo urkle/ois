@@ -31,7 +31,8 @@ using namespace OIS;
 
 //--------------------------------------------------------------------------------//
 SDLInputManager::SDLInputManager() : InputManager("SDLInputManager"),
-        mGrabMouse(true), mHideMouse(true), mKeyboardUsed(false), mMouseUsed(false)
+        mGrabMouse(true), mHideMouse(true), mKeyboardUsed(false), mMouseUsed(false),
+        joySticks(0)
 {
     mFactories.push_back(this);
 }
@@ -40,7 +41,7 @@ SDLInputManager::SDLInputManager() : InputManager("SDLInputManager"),
 SDLInputManager::~SDLInputManager()
 {
     //Close all joysticks
-    SDLJoyStick::_clearJoys(unusedJoyStickList);
+    SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 }
 
 //--------------------------------------------------------------------------------//
@@ -49,8 +50,12 @@ void SDLInputManager::_initialize( ParamList &paramList )
 	Uint32 flags = SDL_WasInit(0);
 	if( flags == 0 )
 		OIS_EXCEPT( E_General, "SDLInputManager::SDLInputManager >> SDL Not Initialized already!");
+    if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0) {
+        SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+        SDL_JoystickEventState(SDL_ENABLE);
+    }
 
-	_parseConfigSettings( paramList );
+    _parseConfigSettings( paramList );
 	_enumerateDevices();
 }
 
