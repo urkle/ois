@@ -37,9 +37,6 @@ namespace OIS
 	public:
 		SDLInputManager();
 		virtual ~SDLInputManager();
-
-		/** @copydoc InputManager::inputSystemName */
-		virtual const std::string& inputSystemName() { return iName; }
 		
         //InputManager Overrides
 		/** @copydoc InputManager::_initialize */
@@ -79,7 +76,6 @@ namespace OIS
 		//! internal class method for finding attached devices
 		void _enumerateDevices();
 
-		static const std::string iName;
 
         //! Used to know if we used up keyboard
 		bool mKeyboardUsed;

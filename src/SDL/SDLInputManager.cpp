@@ -29,8 +29,6 @@ restrictions:
 
 using namespace OIS;
 
-const std::string SDLInputManager::iName = "SDL Input Wrapper";
-
 //--------------------------------------------------------------------------------//
 SDLInputManager::SDLInputManager() : InputManager("SDLInputManager"),
         mGrabMouse(true), mHideMouse(true), mKeyboardUsed(false), mMouseUsed(false)
