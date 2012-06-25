@@ -79,7 +79,13 @@ void SDLInputManager::_enumerateDevices()
 //----------------------------------------------------------------------------//
 DeviceList SDLInputManager::freeDeviceList()
 {
+    DeviceList ret;
+    if (mKeyboardUsed == false)
+        ret.insert(std::make_pair(OISKeyboard, mInputSystemName));
+    if (mMouseUsed == false)
+        ret.insert(std::make_pair(OISMouse, mInputSystemName));
     
+    return ret;
 }
 
 //----------------------------------------------------------------------------//
@@ -87,9 +93,21 @@ int SDLInputManager::totalDevices(Type iType)
 {
 	switch(iType)
 	{
-//	case OISKeyboard: return window ? 1 : 0;
-//	case OISMouse: return window ? 1 : 0;
+	case OISKeyboard: return 1;
+	case OISMouse: return 1;
 //	case OISJoyStick: return joySticks;
+	default: return 0;
+	}
+}
+
+//----------------------------------------------------------------------------//
+int SDLInputManager::freeDevices(Type iType)
+{
+	switch(iType)
+	{
+	case OISKeyboard: return mKeyboardUsed ? 0 : 1;
+	case OISMouse: return mMouseUsed ? 0 : 1;
+//	case OISJoyStick: return (int)unusedJoyStickList.size();
 	default: return 0;
 	}
 }
@@ -97,10 +115,10 @@ int SDLInputManager::totalDevices(Type iType)
 //----------------------------------------------------------------------------//
 bool SDLInputManager::vendorExist(Type iType, const std::string & vendor)
 {
-//	if((iType == OISKeyboard || iType == OISMouse) && vendor == mInputSystemName)
-//	{
-//		return window ? true : false;
-//	}
+	if((iType == OISKeyboard || iType == OISMouse) && vendor == mInputSystemName)
+	{
+		return true;
+	}
 //	else if( iType == OISJoyStick )
 //	{
 //		for(JoyStickInfoList::iterator i = unusedJoyStickList.begin(); i != unusedJoyStickList.end(); ++i)
@@ -109,18 +127,6 @@ bool SDLInputManager::vendorExist(Type iType, const std::string & vendor)
 //	}
 
 	return false;
-}
-
-//----------------------------------------------------------------------------//
-int SDLInputManager::freeDevices(Type iType)
-{
-	switch(iType)
-	{
-//	case OISKeyboard: return window ? (keyboardUsed ? 0 : 1) : 0;
-//	case OISMouse: return window ? (mouseUsed ? 0 : 1) : 0;
-//	case OISJoyStick: return (int)unusedJoyStickList.size();
-	default: return 0;
-	}
 }
 
 //----------------------------------------------------------------------------//
